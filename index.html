@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ТОП-250 лучших фильмов по версии Кинопоиска. Рейтинги, описания, постеры и подробная информация о каждом фильме.">
+<meta name="keywords" content="фильмы, топ-250, кинопоиск, рейтинг фильмов, популярные фильмы">
+<meta name="author" content="Топ-250 фильмов">
+ <meta name="robots" content="index, follow">
+ <link rel="manifest" href="manifest.json">
+    <title>ТОП-250 фильмов - Кинопоиск</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+       
+        .movie-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+
+        .movie-poster {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            background: #e0e0e0;
+        }
+
+        .movie-info {
+            padding: 12px;
+        }
+
+        .movie-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .movie-year {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .movie-rating {
+            font-size: 12px;
+            color: #f5a623;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            padding: 8px 14px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .loading, .error {
+            text-align: center;
+            padding: 60px;
+            color: #666;
+        }
+
+        .error {
+            color: #d32f2f;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0066cc;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+      
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 ТОП-250 фильмов</h1>
+        <div class="subtitle">Лучшие фильмы по версии Кинопоиска</div>
+        
+        <div id="moviesContainer" class="movies-grid">
+            <div class="loading">
+                <div class="loader"></div>
+                Загрузка фильмов...
+            </div>
+        </div>
+        
+        <div class="pagination" id="pagination">
+            <button id="prevBtn">← Назад</button>
+            <div id="pageNumbers" class="pagination"></div>
+            <button id="nextBtn">Вперед →</button>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '2dff61d3-0427-4ca5-a5fc-c514f11e349d';
+        const BASE_URL = 'https://kinopoiskapiunofficial.tech/api';
+        
+        const ITEMS_PER_PAGE = 20; 
+        let currentPage = 1;
+        let totalPages = 13; 
+        let allMovies = [];
+        let isLoading = false;
+        
+       
+        const moviesContainer = document.getElementById('moviesContainer');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const pageNumbersDiv = document.getElementById('pageNumbers');
+        
+        
+        async function fetchAllMovies() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            showLoading();
+            
+            try {
+               
+                const url = `${BASE_URL}/v2.2/films/top?type=TOP_250_BEST_FILMS&page=1`;
+                
+                const response = await fetch(url, {
+                    headers: {
+                        'X-API-KEY': API_KEY,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Ошибка ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.films && data.films.length > 0) {
+                    allMovies = data.films;
+                    totalPages = Math.ceil(allMovies.length / ITEMS_PER_PAGE);
+                    displayCurrentPage();
+                    updatePagination();
+                } else {
+                    showError('Фильмы не найдены');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showError(error.message);
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+      
+        function displayCurrentPage() {
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const moviesToShow = allMovies.slice(startIndex, endIndex);
+            
+            if (moviesToShow.length === 0) {
+                moviesContainer.innerHTML = '<div class="error">Нет фильмов для отображения</div>';
+                return;
+            }
+            
+            displayMovies(moviesToShow);
+        }
+        
+        
+        function displayMovies(movies) {
+            moviesContainer.innerHTML = '';
+            
+            movies.forEach(movie => {
+                const card = document.createElement('a');
+                card.className = 'movie-card';
+                card.href = `film.html?id=${movie.filmId}`;
+                
+                const posterUrl = movie.posterUrlPreview || 'https://via.placeholder.com/200x280?text=Нет+постера';
+                const year = movie.year || 'N/A';
+                const rating = movie.ratingKinopoisk ? movie.ratingKinopoisk.toFixed(1) : 'N/A';
+                
+                card.innerHTML = `
+                    <img class="movie-poster" src="${posterUrl}" alt="${movie.nameRu || movie.nameEn || 'Без названия'}" loading="lazy">
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.nameRu || movie.nameEn || 'Без названия'}</div>
+                        <div class="movie-year">📅 ${year}</div>
+                        <div class="movie-rating">⭐ ${rating}</div>
+                    </div>
+                `;
+                
+                moviesContainer.appendChild(card);
+            });
+        }
+        
+        
+        function updatePagination() {
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+            
+            
+            pageNumbersDiv.innerHTML = '';
+            
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            
+            if (startPage > 1) {
+                addPageButton(1);
+                if (startPage > 2) {
+                    addEllipsis();
+                }
+            }
+            
+            
+            for (let i = startPage; i <= endPage; i++) {
+                addPageButton(i);
+            }
+            
+           
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    addEllipsis();
+                }
+                addPageButton(totalPages);
+            }
+        }
+        
+        function addPageButton(pageNum) {
+            const btn = document.createElement('button');
+            btn.textContent = pageNum;
+            btn.className = 'page-btn';
+            if (pageNum === currentPage) {
+                btn.classList.add('active');
+            }
+            btn.onclick = () => goToPage(pageNum);
+            pageNumbersDiv.appendChild(btn);
+        }
+        
+        function addEllipsis() {
+            const span = document.createElement('span');
+            span.textContent = '...';
+            span.style.padding = '0 5px';
+            span.style.color = '#666';
+            pageNumbersDiv.appendChild(span);
+        }
+        
+        
+        function goToPage(page) {
+            if (page === currentPage || isLoading) return;
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            displayCurrentPage();
+            updatePagination();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        function showLoading() {
+            moviesContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loader"></div>
+                    Загрузка фильмов...
+                </div>
+            `;
+        }
+        
+        function showError(message) {
+            moviesContainer.innerHTML = `
+                <div class="error">
+                    ❌ Ошибка: ${message}
+                    <br><br>
+                    <button onclick="fetchAllMovies()" style="padding: 8px 16px; cursor: pointer;">Повторить</button>
+                </div>
+            `;
+        }
+        
+        
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) goToPage(currentPage - 1);
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) goToPage(currentPage + 1);
+        });
+        
+        
+        fetchAllMovies();
+    </script>
+</body>
+</html>
